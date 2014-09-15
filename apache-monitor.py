@@ -68,12 +68,12 @@ if __name__ == "__main__":
     key = data.splitlines()
     for item in key:
         try:
-            results[item.split(': ')[0]] = float(item.split(': ')[1]) if '.' in item.split(': ')[1] else int(item.split(': ')[1])
+            resultitem = item.split(': ')[1]
+            results[item.split(': ')[0]] = float(resultitem) if '.' in resultitem else int(resultitem)
         except:
             pass
     try:
         del results['Scoreboard']
     except KeyError:
         pass
-    print '----------------------------------------------------------------------'
     print results
