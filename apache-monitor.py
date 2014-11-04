@@ -4,25 +4,9 @@ import os
 from optparse import OptionParser
 import urllib
 
-zabbix_binary = '/usr/bin/zabbix_sender';
-zabbix_conf = '/etc/zabbix/zabbix_agentd.conf';
 zabbix_log = '/dev/null';
 
-results = {
-    #'ConnsAsyncClosing': 0,
-    #'Uptime': 0,
-    #'IdleWorkers': 0,
-    #'ConnsAsyncWriting': 0,
-    #'Total Accesses': 0,
-    #'Total kBytes': 0,
-    #'BytesPerReq': 0,
-    #'CPULoad': 0,
-    #'BytesPerSec': 0,
-    #'ReqPerSec': 0,
-    #'ConnsTotal': 0,
-    #'ConnsAsyncKeepAlive': 0,
-    #'BusyWorkers': 0
-}
+results = {}
 
 def fetchURL(url, user = None, passwd = None):
     """ Return the data from a URL """
@@ -38,8 +22,7 @@ def fetchURL(url, user = None, passwd = None):
 
 def send_to_zabbix(results):
     for key, value in results.iteritems():
-        os.system("%s -c %s -k %s -i %s" % (zabbix_binary, zabbix_conf, key, value))
-
+        os.system("%s -c %s -k %s -i %s" % (opts.zabbix_sender, opts.zabbix_conf, key, value))
 
 if __name__ == "__main__":
     parser = OptionParser(
@@ -75,6 +58,26 @@ if __name__ == "__main__":
         default = "False",
         help = "Only log output, dont send to zabbix server"
         )
+    parser.add_option(
+        "-z",
+        "--zabbix_sender",
+        action = "store",
+        type = "string",
+        dest = "zabbix_sender",
+        default = "/usr/bin/zabbix_sender",
+        help = "Zabbix Sender binary. [default: %default]",
+        )
+    parser.add_option(
+        "-c",
+        "--zabbix_conf",
+        action = "store",
+        type = "string",
+        dest = "zabbix_conf",
+        default = "/etc/zabbix/zabbix_agentd.conf",
+        help = "Zabbix Configuration file. [default: %default]",
+        )
+
+
 
     (opts, args) = parser.parse_args()
     opts.url = "http://%s:%s/server-status?auto" % (opts.host, opts.port)
