@@ -2,7 +2,9 @@
 
 from optparse import OptionParser
 import pymysql
+import re
 
+results = {}
 key_index = [
     'Key_read_requests',
     'Key_reads',
@@ -131,9 +133,27 @@ key_index = [
     'State_updating',
     ]
 
+def get_innodb_data(data):
+    for line in data.split('\n'):
+        if line.find('OS WAIT ARRAY INFO: ') != -1:
+            results['innodb.oswait.reservation_count'] = re.search('\d+', re.search('reservation count \d+', line).group()).group()
+            results['innodb.oswait.signal_count'] = re.search('\d+', re.search('signal count \d+', line).group()).group()
+        if line.find('Mutex spin waits ') != -1:
+            results['innodb.mutex.spin_waits'] = re.search('\d+', re.search('Mutex spin waits \d+', line).group()).group()
+            results['innodb.mutex.rounds'] = re.search('\d+', re.search('rounds \d+', line).group()).group()
+            results['innodb.mutex.os_waits'] = re.search('\d+', re.search('OS waits \d+', line).group()).group()
+        if line.find('History list length ') != -1:
+            results['innodb.history_list_length'] = re.search('\d+', re.search('History list length \d+', line).group()).group()
+        if line.find('Ibuf: ') != -1:
+            results['innodb.ibuf_size'] = re.search('\d+', re.search('Ibuf: size \d+', line).group()).group()
+            results['innodb.ibuf_free_list_len'] = re.search('\d+', re.search('free list len \d+', line).group()).group()
+            results['innodb.ibuf_seg_size'] = re.search('\d+', re.search('seg size \d+', line).group()).group()
+            results['innodb.ibuf_merges'] = re.search('\d+', re.search('\d+ merges', line).group()).group()
+        if line.find('queries inside InnoDB') != -1:
+            results['innodb.queries'] = re.search('\d+', re.search('\d+ queries inside InnoDB', line).group()).group()
+            results['innodb.queries_queued'] = re.search('\d+', re.search('\d+ queries in queue', line).group()).group()
 
 def getstats(opts):
-    results = {}
     conn = pymysql.connect(host=opts.host, passwd=opts.passwd, user=opts.user, port=opts.port)
     cur = conn.cursor(pymysql.cursors.DictCursor)
     cur.execute("SHOW GLOBAL STATUS")
@@ -148,7 +168,7 @@ def getstats(opts):
     #cur.execute("SHOW SLAVE STATUS")
     cur.execute("SHOW /*!50000 ENGINE*/ INNODB STATUS")
     data = cur.fetchall()
-    print data
+    get_innodb_data(data[0]['Status'])
     conn.close()
     return results
 
